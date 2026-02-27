@@ -19,7 +19,7 @@
         "php",
         "twig"
       ],
-    "words": [],
+    "words": ["highlightjs", "techdocs"],
     "ignoreWords": [],
     "language": "en,en-GB,sv,fr-fr",
     "useGitignore": true
