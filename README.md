@@ -4,13 +4,13 @@
 [![semgrep oss scan](https://github.com/Digitalist-Open-Cloud/Matomo-Plugin-RebelNotifications/actions/workflows/semgrep.yaml/badge.svg)](https://github.com/Digitalist-Open-Cloud/Matomo-Plugin-RebelNotifications/actions/workflows/semgrep.yaml)
 [![phpcs](https://github.com/Digitalist-Open-Cloud/Matomo-Plugin-RebelNotifications/actions/workflows/phpcs.yaml/badge.svg)](https://github.com/Digitalist-Open-Cloud/Matomo-Plugin-RebelNotifications/actions/workflows/phpcs.yaml)
 
-- **Version**: 5.0.5
-- **Requires**: Matomo >= 5.0.0-stable
+- **Version**: 5.0.6
+- **Requires**: Matomo >= 5.0.0
 - **License**: GPL v3+
 
 With an API-first approach with Rebel Notifications you could easily automate notifications in your Matomo-instances. You could also display many notifications at once, use HTML with notifications, etc.
 
-"Test plugin with Matomo" is done with Digitalist Open Cloud [Matomo GitHub Action Tests](https://github.com/Digitalist-Open-Cloud/Matomo-github-action-tests), which tests the plugin with Integration-tests against the least (8.2) and highest (8.4) supported PHP-version together with the least (5.0.0) and highest available version of Matomo.
+"Test plugin with Matomo" is done with Digitalist Open Cloud [Matomo GitHub Action Tests](https://github.com/Digitalist-Open-Cloud/Matomo-github-action-tests), which tests the plugin with Integration-tests against the least (8.2) and highest (8.5) supported PHP-version together with the least (5.0.0) and highest available version of Matomo.
 
 ## What is Rebel?
 
@@ -53,7 +53,7 @@ When you add or change a notification, nothing is changed until you logout and l
 #### Options
 
 - `--enabled` - Set notification as enabled
-- `--raw` - Allow raw (HTML) input in message
+- `--raw` - Allow limited HTML input in message (see allowed tags below)
 - `--title` - Notification title (required)
 - `--message` - Notification message (required)
 - `--context` - Context: warning, info, success, error (required)
@@ -177,7 +177,18 @@ The plugin provides the following API methods:
 | `context` | string | warning, info, success, error |
 | `priority` | int | Priority number (higher = more important) |
 | `type` | string | persistent or transitory |
-| `raw` | int | 1 = allow HTML, 0 = strip HTML |
+| `raw` | int | 1 = allow HTML (see allowed tags below), 0 = strip all HTML |
+
+### Allowed HTML tags when using raw input
+
+When `raw=1` (or `--raw` flag), the following HTML tags are allowed in the message:
+
+- `<b>`, `<strong>` - Bold text
+- `<i>`, `<em>` - Italic text
+- `<a>` - Links
+- `<h1>`, `<h2>`, `<h3>`, `<h4>`, `<h5>`, `<h6>` - Headings
+
+All other HTML tags (including `<script>`, `<iframe>`, `<object>`, etc.) will be stripped for security.
 
 ## License
 

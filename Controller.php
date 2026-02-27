@@ -76,7 +76,7 @@ class Controller extends ControllerAdmin
         $type = trim(Request::fromRequest()->getStringParameter('type', 'string'));
         $raw = trim(Request::fromRequest()->getStringParameter('raw', 'string'));
 
-        $trimMessage = preg_replace('#<script(.*?)>(.*?)</script>#is', '', $message);
+        $trimMessage = strip_tags($message, '<b><a><strong><i><h1><h2><h3><h4><h5><h6><em>');
 
         try {
             API::getInstance()->insertNotification(
