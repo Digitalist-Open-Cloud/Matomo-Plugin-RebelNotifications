@@ -21,7 +21,6 @@
       ],
     "words": [],
     "ignoreWords": [],
-    "import": ["@cspell/dict-sv/cspell-ext.json"],
     "language": "en,en-GB,sv,fr-fr",
     "useGitignore": true
 }
