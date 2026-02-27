@@ -1,12 +1,16 @@
 # Matomo Rebel Notifications Plugin
 
+[![Matomo plugin tests](https://github.com/Digitalist-Open-Cloud/Matomo-Plugin-RebelNotifications/actions/workflows/matomo.yaml/badge.svg)](https://github.com/Digitalist-Open-Cloud/Matomo-Plugin-RebelNotifications/actions/workflows/matomo.yaml)
+[![semgrep oss scan](https://github.com/Digitalist-Open-Cloud/Matomo-Plugin-RebelNotifications/actions/workflows/semgrep.yaml/badge.svg)](https://github.com/Digitalist-Open-Cloud/Matomo-Plugin-RebelNotifications/actions/workflows/semgrep.yaml)
+[![phpcs](https://github.com/Digitalist-Open-Cloud/Matomo-Plugin-RebelNotifications/actions/workflows/phpcs.yaml/badge.svg)](https://github.com/Digitalist-Open-Cloud/Matomo-Plugin-RebelNotifications/actions/workflows/phpcs.yaml)
+
+- **Version**: 5.0.5
+- **Requires**: Matomo >= 5.0.0-stable
+- **License**: GPL v3+
+
 With an API-first approach with Rebel Notifications you could easily automate notifications in your Matomo-instances. You could also display many notifications at once, use HTML with notifications, etc.
 
-## Status for tests
-
-![matomo plugin tests](https://github.com/Digitalist-Open-Cloud/Matomo-Plugin-RebelNotifications/actions/workflows/matomo.yaml/badge.svg) ![semgrep oss scan](https://github.com/Digitalist-Open-Cloud/Matomo-Plugin-RebelNotifications/actions/workflows/semgrep.yaml/badge.svg) ![phpcs](https://github.com/Digitalist-Open-Cloud/Matomo-Plugin-RebelNotifications/actions/workflows/phpcs.yaml/badge.svg)
-
-"Test plugin with Matomo" is done with the fork [Matomo GitHub Action Tests](https://github.com/Digitalist-Open-Cloud/Matomo-github-action-tests), which tests the plugin with Integration-tests against the least (8.2) and highest (8.4) supported PHP-version together with the least (5.0.0) and highest available version of Matomo.
+"Test plugin with Matomo" is done with Digitalist Open Cloud [Matomo GitHub Action Tests](https://github.com/Digitalist-Open-Cloud/Matomo-github-action-tests), which tests the plugin with Integration-tests against the least (8.2) and highest (8.4) supported PHP-version together with the least (5.0.0) and highest available version of Matomo.
 
 ## What is Rebel?
 
@@ -43,9 +47,18 @@ When you add or change a notification, nothing is changed until you logout and l
 ### Create a notification
 
 ```sh
-./console rebelnotifications:create --raw --enabled --title="My title" --me
-ssage="This is the message in <strong>bold</strong>" --context=warning --priority=50 --type=persistent
+./console rebelnotifications:create --enabled --raw --title="My title" --message="This is the message in <strong>bold</strong>" --context=warning --priority=50 --type=persistent
 ```
+
+#### Options
+
+- `--enabled` - Set notification as enabled
+- `--raw` - Allow raw (HTML) input in message
+- `--title` - Notification title (required)
+- `--message` - Notification message (required)
+- `--context` - Context: warning, info, success, error (required)
+- `--priority` - Priority number (required)
+- `--type` - Type: persistent, transitory (required)
 
 ### List notifications
 
@@ -55,7 +68,7 @@ ssage="This is the message in <strong>bold</strong>" --context=warning --priorit
 ./console rebelnotifications:list
 ```
 
-#### Enabled notifications
+#### Enabled notifications only
 
 ```sh
 ./console rebelnotifications:list --enabled
@@ -140,6 +153,31 @@ curl -X POST "https://MATOMO.URL/index.php" \
      -d "token_auth=A_SECURE_TOKEN" \
      -d "format=JSON"
 ```
+
+## API Methods
+
+The plugin provides the following API methods:
+
+| Method | Description |
+|--------|-------------|
+| `RebelNotifications.insertNotification` | Create a new notification |
+| `RebelNotifications.updateNotification` | Update an existing notification |
+| `RebelNotifications.deleteNotification` | Delete a notification |
+| `RebelNotifications.getEnabledNotifications` | Get all enabled notifications |
+| `RebelNotifications.getDisabledNotifications` | Get all disabled notifications |
+| `RebelNotifications.getAllNotifications` | Get all notifications |
+
+### Parameter Reference
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `enabled` | int | 1 = enabled, 0 = disabled |
+| `title` | string | Notification title |
+| `message` | string | Notification message (supports HTML if raw=1) |
+| `context` | string | warning, info, success, error |
+| `priority` | int | Priority number (higher = more important) |
+| `type` | string | persistent or transitory |
+| `raw` | int | 1 = allow HTML, 0 = strip HTML |
 
 ## License
 

@@ -67,6 +67,7 @@ class Controller extends ControllerAdmin
     public function createNotification()
     {
         Piwik::checkUserHasSuperUserAccess();
+
         $enabled = trim(Request::fromRequest()->getStringParameter('enabled', 'string'));
         $title = trim(Request::fromRequest()->getStringParameter('title', 'string'));
         $message = trim(Request::fromRequest()->getStringParameter('message', 'string'));
@@ -75,11 +76,13 @@ class Controller extends ControllerAdmin
         $type = trim(Request::fromRequest()->getStringParameter('type', 'string'));
         $raw = trim(Request::fromRequest()->getStringParameter('raw', 'string'));
 
+        $trimMessage = preg_replace('#<script(.*?)>(.*?)</script>#is', '', $message);
+
         try {
             API::getInstance()->insertNotification(
                 $enabled,
                 $title,
-                $message,
+                $trimMessage,
                 $context,
                 $priority,
                 $type,
