@@ -4,11 +4,19 @@
 
 ### Security
 
-- Added nonce for forms.
+- Added CSRF nonce protection
 
 ### Added
 
 - More tests, to check for nonce.
+- Added nonce field to create form, converted delete link to POST form
+- Added nonce field to update form
+
+### Changed
+
+- Code improvements for `API.php`
+- Removed duplicate option in `Commands/CreateNotification.php`
+
 
 ## [5.0.6] - 2026-02-27
 
