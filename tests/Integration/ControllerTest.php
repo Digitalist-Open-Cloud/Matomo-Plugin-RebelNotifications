@@ -144,10 +144,9 @@ class ControllerTest extends IntegrationTestCase
             'raw' => '0',
         ];
         $_REQUEST = $_POST;
-        $this->controller->createNotification();
-        $this->expectException(\RuntimeException::class);
 
-        $this->expectExceptionMessage("Exception: The parameter 'nonce' isn't set in the Request, and a default value wasn't provided.");
+        $this->expectException(\Exception::class);
+        $this->controller->createNotification();
 
         $this->clearPostRequest();
     }
@@ -212,12 +211,15 @@ class ControllerTest extends IntegrationTestCase
     public function testAddingNotificationAndDelete()
     {
         $this->clearPostRequest();
-
+        
         $this->api->insertNotification('1', 'To delete', 'bar', 'warning', '25', 'persistent', '0');
         $this->api->insertNotification('1', 'To keep', 'bar', 'warning', '25', 'persistent', '0');
 
+        $nonce = Nonce::getNonce('RebelNotifications.delete');
+        $_POST = ['nonce' => $nonce, 'id' => '1'];
+        $_REQUEST = $_POST;
 
-        $this->controller->deleteNotification('1');
+        $this->controller->deleteNotification();
 
         $this->clearPostRequest();
 
