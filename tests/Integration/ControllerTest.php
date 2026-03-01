@@ -88,7 +88,7 @@ class ControllerTest extends IntegrationTestCase
         $this->api->insertNotification('1', 'Test notification', 'bar', 'warning', '25', 'persistent', '0');
         $result = $this->controller->index();
         $this->assertIsString($result);
-        $this->assertStringContainsString('RebelNotifications_DeleteNotification', $result);
+        $this->assertStringContainsString('Delete Notification', $result);
     }
 
     public function testEditNotificationGeneratesUpdateNonce()
@@ -211,7 +211,7 @@ class ControllerTest extends IntegrationTestCase
     public function testAddingNotificationAndDelete()
     {
         $this->clearPostRequest();
-        
+
         $this->api->insertNotification('1', 'To delete', 'bar', 'warning', '25', 'persistent', '0');
         $this->api->insertNotification('1', 'To keep', 'bar', 'warning', '25', 'persistent', '0');
 
