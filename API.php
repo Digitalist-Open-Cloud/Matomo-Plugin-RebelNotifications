@@ -35,13 +35,13 @@ use Exception;
 class API extends \Piwik\Plugin\API
 {
     public function insertNotification(
-        string $enabled,
+        int $enabled,
         string $title,
         string $message,
         string $context,
         string $priority,
         string $type,
-        string $raw
+        int $raw
     ): void {
         Piwik::checkUserHasSuperUserAccess();
         $query = "INSERT INTO `" . Common::prefixTable('rebel_notifications') . "`
@@ -59,7 +59,7 @@ class API extends \Piwik\Plugin\API
         }
     }
 
-    public function deleteNotification($id)
+    public function deleteNotification(int $id)
     {
         Piwik::checkUserHasSuperUserAccess();
         try {
@@ -78,14 +78,14 @@ class API extends \Piwik\Plugin\API
     }
 
     public function updateNotification(
-        string $id,
-        string $enabled,
+        int $id,
+        int $enabled,
         string $title,
         string $message,
         string $context,
         string $priority,
         string $type,
-        string $raw
+        int $raw
     ): void {
         Piwik::checkUserHasSuperUserAccess();
 

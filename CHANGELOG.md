@@ -1,5 +1,21 @@
 # Changelog
 
+## [5.0.7] - 2026-03-01
+
+### Security
+
+- Added nonce for forms.
+
+### Added
+
+- More tests, to check for nonce.
+
+## [5.0.6] - 2026-02-27
+
+### Security
+
+- Added filter for HTML - setting allowed tags, so a user with Super admin access can not inject scripts.
+
 ## [5.0.4] - 2025-01-03
 
 ### Added
