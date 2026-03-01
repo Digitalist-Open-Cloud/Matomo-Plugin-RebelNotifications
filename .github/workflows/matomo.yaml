@@ -26,4 +26,3 @@ jobs:
           test-type: 'PluginTests'
           matomo-test-branch: ${{ matrix.target }}
           mysql-service: true
-          mysql-engine: Mariadb
