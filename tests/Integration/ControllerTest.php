@@ -52,11 +52,19 @@ class ControllerTest extends IntegrationTestCase
         FakeAccess::$superUser = true;
         $this->controller = new Controller();
         $this->api = API::getInstance();
+        $this->clearPostRequest();
     }
 
     public function tearDown(): void
     {
+        $this->clearPostRequest();
         parent::tearDown();
+    }
+
+    private function clearPostRequest()
+    {
+        $_POST = [];
+        $_REQUEST = [];
     }
 
     public function testIndex()
@@ -119,11 +127,13 @@ class ControllerTest extends IntegrationTestCase
         }
         $this->assertTrue($found, 'Notification should be created with valid nonce');
 
-        unset($_POST, $_REQUEST);
+        $this->clearPostRequest();
     }
 
     public function testCreateNotificationWithoutNonceFails()
     {
+        $this->clearPostRequest();
+        
         $_POST = [
             'enabled' => '1',
             'title' => 'Test Notification',
@@ -138,11 +148,13 @@ class ControllerTest extends IntegrationTestCase
         $this->expectException(\Piwik\Security\CsrfException::class);
         $this->controller->createNotification();
 
-        unset($_POST, $_REQUEST);
+        $this->clearPostRequest();
     }
 
     public function testUpdateNotificationWithValidNonce()
     {
+        $this->clearPostRequest();
+        
         $this->api->insertNotification('1', 'Original Title', 'Original message', 'warning', '25', 'persistent', '0');
 
         $nonce = Nonce::getNonce('RebelNotifications.update');
@@ -172,11 +184,13 @@ class ControllerTest extends IntegrationTestCase
         }
         $this->assertTrue($updated, 'Notification should be updated with valid nonce');
 
-        unset($_POST, $_REQUEST);
+        $this->clearPostRequest();
     }
 
     public function testUpdateNotificationWithoutNonceFails()
     {
+        $this->clearPostRequest();
+        
         $this->api->insertNotification('1', 'Original Title', 'Original message', 'warning', '25', 'persistent', '0');
 
         $_POST = [
@@ -194,11 +208,13 @@ class ControllerTest extends IntegrationTestCase
         $this->expectException(\Piwik\Security\CsrfException::class);
         $this->controller->updateNotification();
 
-        unset($_POST, $_REQUEST);
+        $this->clearPostRequest();
     }
 
     public function testDeleteNotificationWithValidNonce()
     {
+        $this->clearPostRequest();
+        
         $this->api->insertNotification('1', 'To delete', 'bar', 'warning', '25', 'persistent', '0');
         $this->api->insertNotification('1', 'To keep', 'bar', 'warning', '25', 'persistent', '0');
 
@@ -216,11 +232,13 @@ class ControllerTest extends IntegrationTestCase
         $this->assertCount(1, $notifications);
         $this->assertEquals('To keep', $notifications[0]['title']);
 
-        unset($_POST, $_REQUEST);
+        $this->clearPostRequest();
     }
 
     public function testDeleteNotificationWithoutNonceFails()
     {
+        $this->clearPostRequest();
+        
         $this->api->insertNotification('1', 'To delete', 'bar', 'warning', '25', 'persistent', '0');
 
         $_POST = [
@@ -231,11 +249,13 @@ class ControllerTest extends IntegrationTestCase
         $this->expectException(\Piwik\Security\CsrfException::class);
         $this->controller->deleteNotification();
 
-        unset($_POST, $_REQUEST);
+        $this->clearPostRequest();
     }
 
     public function testAddingNotificationAndGetItListed()
     {
+        $this->clearPostRequest();
+        
         $this->api->insertNotification('1', 'Title to check for', 'bar', 'warning', '25', 'persistent', '0');
         $result = $this->controller->index();
         $this->assertIsString($result);
@@ -244,6 +264,8 @@ class ControllerTest extends IntegrationTestCase
 
     public function testAddingNotificationAndEdit()
     {
+        $this->clearPostRequest();
+        
         $this->api->insertNotification('1', 'Title to edit', 'bar', 'warning', '25', 'persistent', '0');
         $result = $this->controller->editNotification('1');
         $this->assertIsString($result);
@@ -252,6 +274,8 @@ class ControllerTest extends IntegrationTestCase
 
     public function testAddingNotificationAndDelete()
     {
+        $this->clearPostRequest();
+        
         $this->api->insertNotification('1', 'To delete', 'bar', 'warning', '25', 'persistent', '0');
         $this->api->insertNotification('1', 'To keep', 'bar', 'warning', '25', 'persistent', '0');
 
@@ -261,7 +285,7 @@ class ControllerTest extends IntegrationTestCase
 
         $this->controller->deleteNotification('1');
 
-        unset($_POST, $_REQUEST);
+        $this->clearPostRequest();
 
         $result = $this->api->getAllNotifications();
         $this->assertIsArray($result[0]);
