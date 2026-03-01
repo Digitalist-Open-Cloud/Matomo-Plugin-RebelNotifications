@@ -254,15 +254,15 @@ class ControllerTest extends IntegrationTestCase
     {
         $this->api->insertNotification('1', 'To delete', 'bar', 'warning', '25', 'persistent', '0');
         $this->api->insertNotification('1', 'To keep', 'bar', 'warning', '25', 'persistent', '0');
-        
+
         $nonce = Nonce::getNonce('RebelNotifications.delete');
         $_POST = ['nonce' => $nonce, 'id' => '1'];
         $_REQUEST = $_POST;
-        
+
         $this->controller->deleteNotification('1');
-        
+
         unset($_POST, $_REQUEST);
-        
+
         $result = $this->api->getAllNotifications();
         $this->assertIsArray($result[0]);
         $results = $result[0];
