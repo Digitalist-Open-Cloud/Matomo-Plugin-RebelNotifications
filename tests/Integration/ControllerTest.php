@@ -88,7 +88,7 @@ class ControllerTest extends IntegrationTestCase
         $this->api->insertNotification('1', 'Test notification', 'bar', 'warning', '25', 'persistent', '0');
         $result = $this->controller->index();
         $this->assertIsString($result);
-        $this->assertStringContainsString('Delete Notification', $result);
+        $this->assertStringContainsString('deleteNotification', $result);
     }
 
     public function testEditNotificationGeneratesUpdateNonce()
