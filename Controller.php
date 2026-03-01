@@ -31,6 +31,7 @@ use Piwik\Log\LoggerInterface;
 use Piwik\Request;
 use Piwik\Piwik;
 use Piwik\Plugin\ControllerAdmin;
+use Piwik\Nonce;
 
 class Controller extends ControllerAdmin
 {
@@ -57,6 +58,8 @@ class Controller extends ControllerAdmin
         $view->assign('types', $this->types());
         $view->assign('priorities', $this->priorities());
         $view->assign('notificationList', $notificationList);
+        $view->assign('createNonce', Nonce::getNonce('RebelNotifications.create'));
+        $view->assign('deleteNonce', Nonce::getNonce('RebelNotifications.delete'));
 
         return $view->render();
     }
@@ -67,6 +70,7 @@ class Controller extends ControllerAdmin
     public function createNotification()
     {
         Piwik::checkUserHasSuperUserAccess();
+        Nonce::checkNonce('RebelNotifications.create');
 
         $enabled = trim(Request::fromRequest()->getStringParameter('enabled', 'string'));
         $title = trim(Request::fromRequest()->getStringParameter('title', 'string'));
@@ -141,9 +145,10 @@ class Controller extends ControllerAdmin
     public function deleteNotification($id = null)
     {
         Piwik::checkUserHasSuperUserAccess();
+        Nonce::checkNonce('RebelNotifications.delete');
         try {
             if (!isset($id)) {
-                $id = trim(Request::fromRequest()->getStringParameter('id', ''));
+                $id = Request::fromRequest()->getIntegerParameter('id', 0);
             }
             $API = new API();
             $API->deleteNotification($id);
@@ -176,16 +181,18 @@ class Controller extends ControllerAdmin
         $view->assign('contexts', $this->contexts());
         $view->assign('types', $this->types());
         $view->assign('priorities', $this->priorities());
+        $view->assign('updateNonce', Nonce::getNonce('RebelNotifications.update'));
 
         return $view->render();
     }
 
     /**
-     * Handle the submission of the edit form.
-     */
+      * Handle the submission of the edit form.
+      */
     public function updateNotification()
     {
         Piwik::checkUserHasSuperUserAccess();
+        Nonce::checkNonce('RebelNotifications.update');
         $notificationId = trim(Request::fromRequest()->getStringParameter('id', 'string'));
         $enabled = trim(Request::fromRequest()->getStringParameter('enabled', 'string'));
         $title = trim(Request::fromRequest()->getStringParameter('title', 'string'));

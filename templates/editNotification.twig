@@ -6,6 +6,7 @@
                 <h2>{{ 'RebelNotifications_EditNotification'|translate }}</h2>
                 <form method="POST"
                       action="{{ linkTo({"module": "RebelNotifications", "action": "updateNotification"}) }}">
+                    <input type="hidden" name="nonce" value="{{ updateNonce }}">
                     <input type="hidden" name="id" value="{{ notification.id }}">
                     <div class="checkbox row">
                         <label for="enabled">

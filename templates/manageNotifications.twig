@@ -52,7 +52,15 @@
                                     <span class="icon-edit"></span>
                                 </a>
                             </td>
-                            <td><a href='{{ linkTo({'module':'RebelNotifications','action':'deleteNotification', 'id': notification.id}) }}' title="{{ 'RebelNotifications_DeleteNotification'|translate }}"><span class="icon-delete"></span></a></td>
+                            <td>
+                                <form method="POST" action="{{ linkTo({'module':'RebelNotifications','action':'deleteNotification'}) }}" style="display:inline;">
+                                    <input type="hidden" name="id" value="{{ notification.id }}">
+                                    <input type="hidden" name="nonce" value="{{ deleteNonce }}">
+                                    <button type="submit" class="btn-link" title="{{ 'RebelNotifications_DeleteNotification'|translate }}">
+                                        <span class="icon-delete"></span>
+                                    </button>
+                                </form>
+                            </td>
                         </tr>
                     {% else %}
                         <tr>
@@ -65,6 +73,7 @@
                 <h3>{{ 'RebelNotifications_CreateNewNotification'|translate }}</h3>
                 <form method="POST"
                       action="{{ linkTo({"module": "RebelNotifications", "action": "createNotification"}) }}">
+                    <input type="hidden" name="nonce" value="{{ createNonce }}">
                     <div class="checkbox row">
                         <label for="enabled">
                             <input type="checkbox" id="enabled" name="enabled" value="1" checked>
