@@ -88,12 +88,6 @@ class CreateNotification extends ConsoleCommand
                     'Priority',
                     null
                 );
-                $this->addOptionalValueOption(
-                    'type',
-                    null,
-                    'Type',
-                    null
-                );
     }
 
     protected function doExecute(): int

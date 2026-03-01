@@ -63,7 +63,7 @@ class API extends \Piwik\Plugin\API
     {
         Piwik::checkUserHasSuperUserAccess();
         try {
-            $db = self::getDb();
+            $db = $this->getDb();
             $query = $db->query(
                 "DELETE FROM `" .
                 Common::prefixTable('rebel_notifications') .
@@ -131,7 +131,7 @@ class API extends \Piwik\Plugin\API
             $notifications = $db->fetchAll($query, $params);
             return $notifications;
         } catch (\Exception $e) {
-            throw new Exception("Error fetching enabled notifications: " . $e->getMessage());
+            throw new Exception("Error fetching disabled notifications: " . $e->getMessage());
         }
     }
 
@@ -146,7 +146,7 @@ class API extends \Piwik\Plugin\API
             $notifications = $db->fetchAll($query);
             return $notifications;
         } catch (\Exception $e) {
-            throw new Exception("Error fetching enabled notifications: " . $e->getMessage());
+            throw new Exception("Error fetching notifications: " . $e->getMessage());
         }
     }
 
