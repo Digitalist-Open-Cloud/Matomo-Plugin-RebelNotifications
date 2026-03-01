@@ -9,7 +9,7 @@
 
 With an API-first approach with Rebel Notifications you could easily automate notifications in your Matomo-instances. You could also display many notifications at once, use HTML with notifications, etc.
 
-"Test plugin with Matomo" is done with Digitalist Open Cloud [Matomo GitHub Action Tests](https://github.com/Digitalist-Open-Cloud/Matomo-github-action-tests), which tests the plugin with Integration-tests against the least (8.2) and highest (8.5) supported PHP-version together with the least (5.0.0) and highest available version of Matomo.
+Tests is done with [Matomo GitHub Action Tests](https://github.com/Digitalist-Open-Cloud/Matomo-github-action-tests), which tests the plugin with Integration-tests against the least (8.3) and highest (8.5) supported PHP-version together with the least (5.0.0) and highest available version of Matomo.
 
 ## What is Rebel?
 
