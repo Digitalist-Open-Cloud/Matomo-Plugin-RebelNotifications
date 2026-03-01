@@ -1,6 +1,5 @@
 # Matomo Rebel Notifications Plugin
 
-- **Version**: 5.0.6
 - **Requires**: Matomo >= 5.0.0
 - **License**: GPL v3+
 
