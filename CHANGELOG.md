@@ -1,5 +1,11 @@
 # Changelog
 
+## [5.0.8] - 2026-03-02
+
+### Fixed
+
+- Make sure integer values really are integers.
+
 ## [5.0.7] - 2026-03-01
 
 ### Security
