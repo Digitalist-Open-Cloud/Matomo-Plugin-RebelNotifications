@@ -60,7 +60,7 @@ class ListNotifications extends ConsoleCommand
         $output = $this->getOutput();
         $enabled = $input->getOption('enabled') ? true : false;
 
-        $api = new API();
+        $api = API::getInstance();
         if ($enabled === false) {
             $listNotifications = $api->getAllNotifications();
         } else {
@@ -68,6 +68,8 @@ class ListNotifications extends ConsoleCommand
         }
 
         foreach ($listNotifications as $notification) {
+            $enabled = 'no';
+            $raw = 'no';
             if ($notification['enabled'] == 1) {
                 $enabled = 'yes';
             }

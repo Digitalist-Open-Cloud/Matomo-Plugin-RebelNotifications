@@ -72,13 +72,13 @@ class Controller extends ControllerAdmin
         Piwik::checkUserHasSuperUserAccess();
         Nonce::checkNonce('RebelNotifications.create');
 
-        $enabled = trim(Request::fromRequest()->getStringParameter('enabled', 'string'));
+        $enabled = trim(Request::fromRequest()->getIntegerParameter('enabled', 0));
         $title = trim(Request::fromRequest()->getStringParameter('title', 'string'));
         $message = trim(Request::fromRequest()->getStringParameter('message', 'string'));
         $context = trim(Request::fromRequest()->getStringParameter('context', 'string'));
         $priority = trim(Request::fromRequest()->getStringParameter('priority', 'string'));
         $type = trim(Request::fromRequest()->getStringParameter('type', 'string'));
-        $raw = trim(Request::fromRequest()->getStringParameter('raw', 'string'));
+        $raw = trim(Request::fromRequest()->getIntegerParameter('raw', 0));
 
         $trimMessage = strip_tags($message, '<b><a><strong><i><h1><h2><h3><h4><h5><h6><em>');
 
@@ -150,7 +150,7 @@ class Controller extends ControllerAdmin
             if (!isset($id)) {
                 $id = Request::fromRequest()->getIntegerParameter('id', 0);
             }
-            $API = new API();
+            $API = API::getInstance();
             $API->deleteNotification($id);
 
             $notificationList[] = 'Notification ' . $id . ' deleted';
@@ -193,23 +193,23 @@ class Controller extends ControllerAdmin
     {
         Piwik::checkUserHasSuperUserAccess();
         Nonce::checkNonce('RebelNotifications.update');
-        $notificationId = trim(Request::fromRequest()->getStringParameter('id', 'string'));
-        $enabled = trim(Request::fromRequest()->getStringParameter('enabled', 'string'));
+        $notificationId = trim(Request::fromRequest()->getIntegerParameter('id', 0));
+        $enabled = trim(Request::fromRequest()->getIntegerParameter('enabled', 0));
         $title = trim(Request::fromRequest()->getStringParameter('title', 'string'));
         $message = trim(Request::fromRequest()->getStringParameter('message', 'string'));
         $context = trim(Request::fromRequest()->getStringParameter('context', 'string'));
         $priority = trim(Request::fromRequest()->getStringParameter('priority', 'string'));
         $type = trim(Request::fromRequest()->getStringParameter('type', 'string'));
-        $raw = trim(Request::fromRequest()->getStringParameter('raw', 'string'));
+        $raw = trim(Request::fromRequest()->getIntegerParameter('raw', 0));
 
         try {
-            $api = new API();
+            $api = API::getInstance();
             $api->updateNotification($notificationId, $enabled, $title, $message, $context, $priority, $type, $raw);
             $notificationList[] = 'Notification ' . $notificationId . ' updated';
             return $this->index(0, $notificationList);
         } catch (\Exception $e) {
             $notificationList[] = 'Notification ' . $notificationId . ' not updated. Error: ' . $e->getMessage();
-            $this->index(0, $notificationList);
+            return $this->index(0, $notificationList);
         }
     }
 }

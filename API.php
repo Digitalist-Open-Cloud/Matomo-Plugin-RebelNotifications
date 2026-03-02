@@ -73,7 +73,6 @@ class API extends \Piwik\Plugin\API
             return true;
         } catch (\Exception $e) {
             throw $e;
-            return false;
         }
     }
 

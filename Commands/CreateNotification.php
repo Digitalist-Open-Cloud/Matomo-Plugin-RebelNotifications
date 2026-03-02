@@ -124,8 +124,8 @@ class CreateNotification extends ConsoleCommand
             throw new \InvalidArgumentException("The 'priority' option is required.");
         }
         $priority = $input->getOption('priority');
-        $api = new API();
-        $addNotification = $api->insertNotification($enabled, $title, $message, $context, $priority, $type, $raw);
+        $api = API::getInstance();
+        $api->insertNotification($enabled, $title, $message, $context, $priority, $type, $raw);
         $message = sprintf('<info>Created notification: %s</info>', $title);
 
         $output->writeln($message);

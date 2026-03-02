@@ -42,7 +42,7 @@ class RebelNotifications extends \Piwik\Plugin
     public function getNotifications()
     {
         $this->logger()->info("Get notifications");
-        $api = new API();
+        $api = API::getInstance();
         $enabledNotifications = $this->getEnabledNotifications();
         foreach ($enabledNotifications as $notificationData) {
             $notification = new Notification($notificationData['message']);
