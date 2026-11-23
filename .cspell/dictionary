@@ -24,3 +24,6 @@ phpstan
 PHPStan
 PHPCS
 dependabot
+phpcodesniffer
+dealerdirect
+shivammathur
