@@ -21,212 +21,223 @@
 
 namespace Piwik\Plugins\RebelNotifications\tests\Integration;
 
-use Piwik\Tests\Framework\TestCase\IntegrationTestCase;
-use Piwik\Plugins\RebelNotifications\Controller;
-use Piwik\Plugins\RebelNotifications\API;
-use Piwik\Tests\Framework\Fixture;
+use Exception;
+use Piwik\Common;
+use Piwik\Db;
 use Piwik\Nonce;
+use Piwik\Notification\Manager;
+use Piwik\Plugins\RebelNotifications\API;
+use Piwik\Plugins\RebelNotifications\Controller;
+use Piwik\Plugins\RebelNotifications\RebelNotifications;
+use Piwik\Tests\Framework\Fixture;
 use Piwik\Tests\Framework\Mock\FakeAccess;
+use Piwik\Tests\Framework\TestCase\IntegrationTestCase;
 
 /**
  * @group RebelNotifications
- * @group ControllerTest
  * @group Plugins
  */
 class ControllerTest extends IntegrationTestCase
 {
-    /**
-     * @var Controller
-     */
-    private $controller;
+    private const FORM = [
+        'enabled' => '1',
+        'title' => 'Service window',
+        'message' => 'We are <b onclick="alert(1)">closed</b><script>alert(1)</script>',
+        'context' => 'warning',
+        'priority' => '25',
+        'type' => 'persistent',
+        'raw' => '1',
+    ];
+
+    private const CHANGES = ['createNotification', 'updateNotification', 'deleteNotification'];
 
     /**
-     * @var API
+     * @var int the notification that is there from the start
      */
-    private $api;
+    private $id;
 
     public function setUp(): void
     {
         parent::setUp();
+
+        Fixture::loadAllTranslations();
+        Fixture::createSuperUser();
         Fixture::createWebsite('2025-01-01 00:00:00');
-        FakeAccess::$superUser = true;
-        $this->controller = new Controller();
-        $this->api = API::getInstance();
-        $this->clearPostRequest();
+        FakeAccess::clearAccess(true);
+        API::getInstance()->insertNotification(1, 'There from the start', 'bar', 'info', '25', 'persistent', 0);
+        $this->id = (int) API::getInstance()->getAllNotifications()[0]['id'];
+        $_GET = $_POST = [];
+        $_SERVER['REQUEST_METHOD'] = 'GET';
     }
 
     public function tearDown(): void
     {
-        $this->clearPostRequest();
+        $_GET = $_POST = [];
+        $_SERVER['REQUEST_METHOD'] = 'GET';
+
         parent::tearDown();
     }
 
-    private function clearPostRequest()
+    public function provideContainerConfig()
     {
-        $_POST = [];
-        $_REQUEST = [];
+        return ['Piwik\Access' => new FakeAccess()];
     }
 
-    public function testIndex()
+    public function testANotificationIsCreatedWithACleanMessage()
     {
-        $result = $this->controller->index();
-        $this->assertIsString($result);
-        $this->assertStringContainsString('</html>', $result);
-        $this->assertStringContainsString('<select name="priority"', $result);
-        $this->assertStringContainsString('<option value="toast">toast</option>', $result);
+        $page = $this->post('createNotification', self::FORM);
+
+        $created = API::getInstance()->getAllNotifications()[1];
+        $this->assertSame(['Service window', 'We are <b>closed</b>alert(1)'], [$created['title'], $created['message']]);
+        $this->assertStringContainsString('Service window', $page);
+        $this->assertStringNotContainsString('<script>alert(1)', $page);
     }
 
-    public function testIndexGeneratesCreateNonce()
+    public function testANotificationIsChanged()
     {
-        $result = $this->controller->index();
-        $this->assertIsString($result);
-        $this->assertStringContainsString('name="nonce" value="', $result);
+        $this->post('updateNotification', ['id' => $this->id, 'title' => 'Changed', 'enabled' => '0', 'raw' => '0'] + self::FORM);
+
+        $changed = API::getInstance()->getAllNotifications()[0];
+        $this->assertSame('Changed', $changed['title']);
+        $this->assertEquals([0, 0], [$changed['enabled'], $changed['raw']]);
     }
 
-    public function testIndexGeneratesDeleteNonce()
+    public function testANotificationIsDeleted()
     {
-        $this->api->insertNotification('1', 'Test notification', 'bar', 'warning', '25', 'persistent', '0');
-        $result = $this->controller->index();
-        $this->assertIsString($result);
-        $this->assertStringContainsString('deleteNotification', $result);
+        $this->post('deleteNotification', ['id' => $this->id]);
+
+        $this->assertSame([], API::getInstance()->getAllNotifications());
     }
 
-    public function testEditNotificationGeneratesUpdateNonce()
+    public function testAnErrorIsShownAndNothingIsSaved()
     {
-        $this->api->insertNotification('1', 'Title to edit', 'bar', 'warning', '25', 'persistent', '0');
-        $result = $this->controller->editNotification('1');
-        $this->assertIsString($result);
-        $this->assertStringContainsString('name="nonce" value="', $result);
+        $page = $this->post('createNotification', ['context' => 'danger'] + self::FORM);
+
+        $this->assertCount(1, API::getInstance()->getAllNotifications());
+        $this->assertStringContainsString('has to be one of', $page);
     }
 
-    public function testCreateNotificationWithValidNonce()
+    /**
+     * @dataProvider getChanges
+     */
+    public function testAChangeIsPosted(string $action)
     {
-        $nonce = Nonce::getNonce('RebelNotifications.create');
-        $_POST = [
-            'nonce' => $nonce,
-            'enabled' => '1',
-            'title' => 'Test Notification',
-            'message' => 'Test message',
-            'context' => 'warning',
-            'priority' => '25',
-            'type' => 'persistent',
-            'raw' => '0',
-        ];
-        $_REQUEST = $_POST;
+        $this->refuse($action, 'GET', ['nonce' => Nonce::getNonce(Controller::NONCE)]);
+    }
 
-        $result = $this->controller->createNotification();
-        $this->assertIsString($result);
+    /**
+     * @dataProvider getChanges
+     */
+    public function testAChangeNeedsTheNonceOfThePage(string $action)
+    {
+        $this->refuse($action, 'POST', []);
+        $this->refuse($action, 'POST', ['nonce' => 'not-the-nonce']);
+    }
 
-        $notifications = $this->api->getEnabledNotifications();
-        $found = false;
-        foreach ($notifications as $notification) {
-            if ($notification['title'] === 'Test Notification') {
-                $found = true;
-                break;
-            }
+    /**
+     * @dataProvider getChanges
+     */
+    public function testAChangeNeedsASuperUser(string $action)
+    {
+        $nonce = Nonce::getNonce(Controller::NONCE);
+        FakeAccess::clearAccess(false, [1]);
+
+        $this->refuse($action, 'POST', ['nonce' => $nonce]);
+    }
+
+    public function getChanges(): array
+    {
+        return array_combine(self::CHANGES, array_map(function (string $action): array {
+            return [$action];
+        }, self::CHANGES));
+    }
+
+    /**
+     * @dataProvider getPages
+     */
+    public function testThePagesAreForSuperUsers(string $action)
+    {
+        FakeAccess::clearAccess(false, [1]);
+
+        $this->expectException(Exception::class);
+        $this->call($action, 'GET', [], ['id' => $this->id]);
+    }
+
+    public function getPages(): array
+    {
+        return ['index' => ['index'], 'editNotification' => ['editNotification']];
+    }
+
+    public function testThePagesEscapeWhatIsStored()
+    {
+        // As it could be stored before messages were cleaned on saving.
+        Db::query(
+            'UPDATE ' . Common::prefixTable('rebel_notifications') . ' SET title = ?, message = ?, raw = 1',
+            ['"><script>alert(1)</script>', '<b>ok</b><script>alert(2)</script><img src=x onerror=alert(3)>']
+        );
+
+        $pages = $this->call('index', 'GET', []) . $this->call('editNotification', 'GET', [], ['id' => $this->id]);
+
+        $this->assertStringContainsString('<b>ok</b>', $pages);
+        $this->assertStringNotContainsString('<script>alert(', $pages);
+        $this->assertStringNotContainsString('<img src=x', $pages);
+    }
+
+    public function testAMessageWithoutRawIsShownAsText()
+    {
+        Db::query('UPDATE ' . Common::prefixTable('rebel_notifications') . ' SET message = ?, raw = 0', ['<b>bold</b>']);
+
+        $this->assertStringContainsString('&lt;b&gt;bold&lt;/b&gt;', $this->call('index', 'GET', []));
+    }
+
+    public function testEnabledNotificationsAreShownAtLoginWithACleanMessage()
+    {
+        API::getInstance()->insertNotification(0, 'Disabled', 'bar', 'info', '25', 'persistent', 0);
+        Db::query(
+            'UPDATE ' . Common::prefixTable('rebel_notifications') . ' SET message = ?, raw = 1 WHERE id = ?',
+            ['<b>ok</b><script>alert(2)</script>', $this->id]
+        );
+
+        (new RebelNotifications())->getNotifications();
+
+        $shown = Manager::getAllNotificationsToDisplay();
+        $this->assertSame(['RebelNotifications_' . $this->id], array_keys($shown));
+        $this->assertSame('<b>ok</b>alert(2)', $shown['RebelNotifications_' . $this->id]->message);
+    }
+
+    /**
+     * @param array<string, mixed> $form
+     */
+    private function post(string $action, array $form): string
+    {
+        return $this->call($action, 'POST', $form + ['nonce' => Nonce::getNonce(Controller::NONCE)]);
+    }
+
+    /**
+     * @param array<string, mixed> $form
+     */
+    private function refuse(string $action, string $method, array $form): void
+    {
+        $form += ['id' => $this->id, 'title' => 'Planted'] + self::FORM;
+        try {
+            $this->call($action, $method, $method === 'GET' ? [] : $form, $method === 'GET' ? $form : []);
+            $this->fail($action . ' was done.');
+        } catch (Exception $e) {
+            FakeAccess::clearAccess(true);
+            $this->assertSame(['There from the start'], array_column(API::getInstance()->getAllNotifications(), 'title'));
         }
-        $this->assertTrue($found, 'Notification should be created with valid nonce');
-
-        $this->clearPostRequest();
     }
 
-    public function testCreateNotificationWithoutNonceFails()
+    /**
+     * @param array<string, mixed> $form
+     * @param array<string, mixed> $query
+     */
+    private function call(string $action, string $method, array $form, array $query = []): string
     {
-        $this->clearPostRequest();
+        $_GET = $query + ['idSite' => 1];
+        $_POST = $form;
+        $_SERVER['REQUEST_METHOD'] = $method;
 
-        $_POST = [
-            'enabled' => '1',
-            'title' => 'Test Notification',
-            'message' => 'Test message',
-            'context' => 'warning',
-            'priority' => '25',
-            'type' => 'persistent',
-            'raw' => '0',
-        ];
-        $_REQUEST = $_POST;
-
-        $this->expectException(\Exception::class);
-        $this->controller->createNotification();
-
-        $this->clearPostRequest();
-    }
-
-    public function testUpdateNotificationWithValidNonce()
-    {
-        $this->clearPostRequest();
-
-        $this->api->insertNotification('1', 'Original Title', 'Original message', 'warning', '25', 'persistent', '0');
-
-        $nonce = Nonce::getNonce('RebelNotifications.update');
-        $_POST = [
-            'nonce' => $nonce,
-            'id' => '1',
-            'enabled' => '1',
-            'title' => 'Updated Title',
-            'message' => 'Updated message',
-            'context' => 'success',
-            'priority' => '30',
-            'type' => 'toast',
-            'raw' => '1',
-        ];
-        $_REQUEST = $_POST;
-
-        $result = $this->controller->updateNotification();
-        $this->assertIsString($result);
-
-        $notifications = $this->api->getAllNotifications();
-        $updated = false;
-        foreach ($notifications as $notification) {
-            if ($notification['id'] == 1 && $notification['title'] === 'Updated Title') {
-                $updated = true;
-                break;
-            }
-        }
-        $this->assertTrue($updated, 'Notification should be updated with valid nonce');
-
-        $this->clearPostRequest();
-    }
-
-
-    public function testAddingNotificationAndGetItListed()
-    {
-        $this->clearPostRequest();
-
-        $this->api->insertNotification('1', 'Title to check for', 'bar', 'warning', '25', 'persistent', '0');
-        $result = $this->controller->index();
-        $this->assertIsString($result);
-        $this->assertStringContainsString('Title to check for', $result);
-    }
-
-    public function testAddingNotificationAndEdit()
-    {
-        $this->clearPostRequest();
-
-        $this->api->insertNotification('1', 'Title to edit', 'bar', 'warning', '25', 'persistent', '0');
-        $result = $this->controller->editNotification('1');
-        $this->assertIsString($result);
-        $this->assertStringContainsString('Title to edit', $result);
-    }
-
-    public function testAddingNotificationAndDelete()
-    {
-        $this->clearPostRequest();
-
-        $this->api->insertNotification('1', 'To delete', 'bar', 'warning', '25', 'persistent', '0');
-        $this->api->insertNotification('1', 'To keep', 'bar', 'warning', '25', 'persistent', '0');
-
-        $nonce = Nonce::getNonce('RebelNotifications.delete');
-        $_POST = ['nonce' => $nonce, 'id' => '1'];
-        $_REQUEST = $_POST;
-
-        $this->controller->deleteNotification();
-
-        $this->clearPostRequest();
-
-        $result = $this->api->getAllNotifications();
-        $this->assertIsArray($result[0]);
-        $results = $result[0];
-        $this->assertNotContains('To delete', $results);
-        $this->assertContains('To keep', $results);
+        return (string) (new Controller())->$action();
     }
 }

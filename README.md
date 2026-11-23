@@ -1,8 +1,10 @@
 # Matomo Rebel Notifications Plugin
 
-[![Matomo plugin tests](https://github.com/Digitalist-Open-Cloud/Matomo-Plugin-RebelNotifications/actions/workflows/matomo.yaml/badge.svg)](https://github.com/Digitalist-Open-Cloud/Matomo-Plugin-RebelNotifications/actions/workflows/matomo.yaml)
-[![semgrep oss scan](https://github.com/Digitalist-Open-Cloud/Matomo-Plugin-RebelNotifications/actions/workflows/semgrep.yaml/badge.svg)](https://github.com/Digitalist-Open-Cloud/Matomo-Plugin-RebelNotifications/actions/workflows/semgrep.yaml)
-[![phpcs](https://github.com/Digitalist-Open-Cloud/Matomo-Plugin-RebelNotifications/actions/workflows/phpcs.yaml/badge.svg)](https://github.com/Digitalist-Open-Cloud/Matomo-Plugin-RebelNotifications/actions/workflows/phpcs.yaml)
+[![PHPCS check](https://github.com/Digitalist-Open-Cloud/Matomo-Plugin-RebelNotifications/actions/workflows/phpcs.yaml/badge.svg)](https://github.com/Digitalist-Open-Cloud/Matomo-Plugin-RebelNotifications/actions/workflows/phpcs.yaml)
+[![Semgrep OSS scan](https://github.com/Digitalist-Open-Cloud/Matomo-Plugin-RebelNotifications/actions/workflows/semgrep.yaml/badge.svg)](https://github.com/Digitalist-Open-Cloud/Matomo-Plugin-RebelNotifications/actions/workflows/semgrep.yaml)
+[![Test plugin with Matomo](https://github.com/Digitalist-Open-Cloud/Matomo-Plugin-RebelNotifications/actions/workflows/matomo.yaml/badge.svg)](https://github.com/Digitalist-Open-Cloud/Matomo-Plugin-RebelNotifications/actions/workflows/matomo.yaml)
+[![PHPStan check](https://github.com/Digitalist-Open-Cloud/Matomo-Plugin-RebelNotifications/actions/workflows/phpstan.yaml/badge.svg)](https://github.com/Digitalist-Open-Cloud/Matomo-Plugin-RebelNotifications/actions/workflows/phpstan.yaml)
+[![Check spelling](https://github.com/Digitalist-Open-Cloud/Matomo-Plugin-RebelNotifications/actions/workflows/spelling.yaml/badge.svg)](https://github.com/Digitalist-Open-Cloud/Matomo-Plugin-RebelNotifications/actions/workflows/spelling.yaml)
 
 - **Requires**: Matomo >= 5.0.0
 - **License**: GPL v3+
@@ -20,7 +22,7 @@ Rebel is short for RebelMetrics. RebelMetrics is Matomo on super charged batteri
 With Rebel Notifications you can add notifications to your users, with a range of settings:
 
 - Type of notification
-- Use HTML (links, images etc.)
+- Use limited HTML (bold, italic, links, headings)
 - Priority
 - Etc.
 
@@ -56,8 +58,8 @@ When you add or change a notification, nothing is changed until you logout and l
 - `--title` - Notification title (required)
 - `--message` - Notification message (required)
 - `--context` - Context: warning, info, success, error (required)
-- `--priority` - Priority number (required)
-- `--type` - Type: persistent, transitory (required)
+- `--priority` - Priority number, 1 to 100 (required)
+- `--type` - Type: persistent, transient, toast (required)
 
 ### List notifications
 
@@ -174,9 +176,9 @@ The plugin provides the following API methods:
 | `title` | string | Notification title |
 | `message` | string | Notification message (supports HTML if raw=1) |
 | `context` | string | warning, info, success, error |
-| `priority` | int | Priority number (higher = more important) |
-| `type` | string | persistent or transitory |
-| `raw` | int | 1 = allow HTML (see allowed tags below), 0 = strip all HTML |
+| `priority` | int | Priority number, 1 to 100 (higher = more important) |
+| `type` | string | persistent, transient or toast |
+| `raw` | int | 1 = allow HTML (see allowed tags below), 0 = show the message as plain text |
 
 ### Allowed HTML tags when using raw input
 
@@ -187,7 +189,9 @@ When `raw=1` (or `--raw` flag), the following HTML tags are allowed in the messa
 - `<a>` - Links
 - `<h1>`, `<h2>`, `<h3>`, `<h4>`, `<h5>`, `<h6>` - Headings
 
-All other HTML tags (including `<script>`, `<iframe>`, `<object>`, etc.) will be stripped for security.
+All other HTML tags (including `<script>`, `<iframe>`, `<object>`, etc.) are removed, and so are all attributes. A link keeps its `href` when it is an `http`, `https` or `mailto` address.
+
+The API methods are for super users.
 
 ## License
 

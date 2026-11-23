@@ -1,12 +1,5 @@
 {% extends 'admin.twig' %}
 {% block content %}
-    {% import 'macros.twig' as piwik %}
-
-    {% if notifications is not empty and notifications|length %}
-        {% for notificationId, n in notifications %}
-            {{ n.message|notification({'id': notificationId, 'type': n.type, 'title': n.title, 'noclear': n.hasNoClear, 'context': n.context, 'raw': n.raw}, false) }}
-        {% endfor %}
-    {% endif %}
     {% if notificationList|length >= 1 %}
     <div id="messages" class="alert">
        {% for notification in notificationList %}
@@ -42,7 +35,7 @@
                             {% endif %}
                            </td>
                             <td>{{ notification.title }}</td>
-                            <td>{{ notification.message | raw }}</td>
+                            <td>{% if notification.raw %}{{ notification.message|raw }}{% else %}{{ notification.message }}{% endif %}</td>
                             <td>{{ notification.context }}</td>
                             <td>{{ notification.priority }}</td>
                             <td>{{ notification.type }}</td>
@@ -55,7 +48,7 @@
                             <td>
                                 <form method="POST" action="{{ linkTo({'module':'RebelNotifications','action':'deleteNotification'}) }}" style="display:inline;">
                                     <input type="hidden" name="id" value="{{ notification.id }}">
-                                    <input type="hidden" name="nonce" value="{{ deleteNonce }}">
+                                    <input type="hidden" name="nonce" value="{{ nonce }}">
                                     <button type="submit" class="btn-link" title="{{ 'RebelNotifications_DeleteNotification'|translate }}">
                                         <span class="icon-delete"></span>
                                     </button>
@@ -64,16 +57,16 @@
                         </tr>
                     {% else %}
                         <tr>
-                            <td colspan="7">{{ 'RebelNotifications_NoNotificationsFound'|translate }}</td>
+                            <td colspan="9">{{ 'RebelNotifications_NoNotificationsFound'|translate }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>
             </table>
-            <div class="form-group" class="rebel-margin">
+            <div class="form-group rebel-margin">
                 <h3>{{ 'RebelNotifications_CreateNewNotification'|translate }}</h3>
                 <form method="POST"
                       action="{{ linkTo({"module": "RebelNotifications", "action": "createNotification"}) }}">
-                    <input type="hidden" name="nonce" value="{{ createNonce }}">
+                    <input type="hidden" name="nonce" value="{{ nonce }}">
                     <div class="checkbox row">
                         <label for="enabled">
                             <input type="checkbox" id="enabled" name="enabled" value="1" checked>
@@ -83,7 +76,7 @@
                     <div class="row">
                         <label>
                             {{ 'RebelNotifications_Title'|translate }}
-                            <input type="text" name="title" required>
+                            <input type="text" name="title" maxlength="255" required>
                         </label>
                     </div>
                     <div class="row">

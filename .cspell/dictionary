@@ -16,3 +16,11 @@ matomo
 Piwik
 piwik
 noclear
+noreferrer
+noopener
+unsanitized
+SQLSTATE
+phpstan
+PHPStan
+PHPCS
+dependabot

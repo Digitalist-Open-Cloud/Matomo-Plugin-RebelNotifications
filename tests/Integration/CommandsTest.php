@@ -58,6 +58,17 @@ class CommandsTest extends ConsoleCommandTestCase
             "Created notification: test title",
             $this->applicationTester->getDisplay()
         );
+
+        $this->applicationTester->run([
+            'command' => 'rebelnotifications:create',
+            '--title' => 'plain and off',
+            '--message' => 'this is <b>text</b>',
+            '--context' => 'warning',
+            '--priority' => '50',
+            '--type' => 'persistent'
+        ]);
+        $created = $this->api->getAllNotifications();
+        $this->assertEquals([[1, 1], [0, 0]], [[$created[0]['enabled'], $created[0]['raw']], [$created[1]['enabled'], $created[1]['raw']]]);
     }
 
     public function testHelpListNotifications()

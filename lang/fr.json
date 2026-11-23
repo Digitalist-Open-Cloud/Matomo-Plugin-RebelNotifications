@@ -1,14 +1,22 @@
 {
   "RebelNotifications": {
+    "Cancel": "Annuler",
     "Context": "Contexte",
     "CreateNewNotification": "Créer une nouvelle notification",
     "CreateNotification": "Créer une notification",
+    "Created": "La notification %1$s a été créée.",
     "Delete": "Supprimer",
     "DeleteNotification": "Supprimer la notification",
+    "Deleted": "La notification %1$s a été supprimée.",
     "Disabled": "Désactivé",
     "Edit": "Modifier",
     "EditNotification": "Modifier la notification",
     "Enabled": "Activé",
+    "ErrorMessage": "Une notification a besoin d'un message qui n'est pas trop long.",
+    "ErrorNotFound": "La notification est introuvable.",
+    "ErrorNotPosted": "Une modification doit être envoyée depuis la page.",
+    "ErrorOneOf": "La valeur de %1$s doit être l'une des suivantes : %2$s.",
+    "ErrorTitle": "Une notification a besoin d'un titre de %1$s caractères au maximum.",
     "ExistingNotifications": "Notifications existantes",
     "Manage": "Gérer",
     "ManageNotifications": "Gérer les notifications",
@@ -18,7 +26,9 @@
     "Raw": "Brut",
     "RawHTML": "Brut (HTML)",
     "RebelNotifications": "Rebel Notifications",
+    "SaveChanges": "Enregistrer les modifications",
     "Title": "Titre",
-    "Type": "Type"
+    "Type": "Type",
+    "Updated": "La notification %1$s a été mise à jour."
   }
 }

@@ -21,50 +21,59 @@
 
 namespace Piwik\Plugins\RebelNotifications;
 
-use Piwik\Db;
-use Exception;
 use Piwik\Common;
+use Piwik\Db;
+use Piwik\DbHelper;
 use Piwik\Notification;
-use Piwik\Container\StaticContainer;
-use Piwik\Log\LoggerInterface;
-use Piwik\Plugins\RebelNotifications\API;
 
 class RebelNotifications extends \Piwik\Plugin
 {
+    private const TABLE = 'rebel_notifications';
+
     public function registerEvents()
     {
         return [
             'Login.authenticate.successful' => 'getNotifications',
             'AssetManager.getStylesheetFiles' => 'getStylesheetFiles',
+            'Db.getTablesInstalled' => 'getTablesInstalled',
         ];
     }
 
+    /**
+     * Shows the enabled notifications to the user who logs in.
+     */
     public function getNotifications()
     {
-        $this->logger()->info("Get notifications");
-        $api = API::getInstance();
-        $enabledNotifications = $this->getEnabledNotifications();
-        foreach ($enabledNotifications as $notificationData) {
-            $notification = new Notification($notificationData['message']);
-            $notification->title = $notificationData['title'];
-            $notification->context = $notificationData['context'];
-            $notification->priority = $notificationData['priority'];
-            $notification->raw = $notificationData['raw'];
-            $notification->type = $notificationData['type'];
+        $rows = Db::fetchAll('SELECT * FROM `' . Common::prefixTable(self::TABLE) . '` WHERE `enabled` = 1');
+        foreach ($rows as $row) {
+            $raw = (bool) $row['raw'];
+            // Cleaned here as well: a message stored before it was cleaned on saving is shown as HTML.
+            $notification = new Notification($raw ? Message::clean((string) $row['message']) : (string) $row['message']);
+            $notification->title = $row['title'];
+            $notification->context = $row['context'];
+            $notification->priority = (int) $row['priority'];
+            $notification->raw = $raw;
+            $notification->type = $row['type'];
 
-            Notification\Manager::notify('RebelNotifications_' . $notificationData['id'], $notification);
+            Notification\Manager::notify('RebelNotifications_' . $row['id'], $notification);
         }
     }
 
     public function getStylesheetFiles(&$stylesheets)
     {
         $stylesheets[] = "plugins/RebelNotifications/stylesheets/rebel.less";
+        $stylesheets[] = "plugins/RebelNotifications/stylesheets/menuIcon.less";
+    }
+
+    public function getTablesInstalled(&$allTablesInstalled)
+    {
+        $allTablesInstalled[] = Common::prefixTable(self::TABLE);
     }
 
     public function install()
     {
-        $db = $this->getDb();
-        $query = "CREATE TABLE " . Common::prefixTable('rebel_notifications') . " (
+        // DbHelper creates the table with the character set and engine Matomo is configured for.
+        DbHelper::createTable(self::TABLE, "
             `id` int(24) NOT NULL AUTO_INCREMENT,
             `enabled` int NOT NULL,
             `title` varchar(255) NOT NULL,
@@ -75,39 +84,11 @@ class RebelNotifications extends \Piwik\Plugin
             `raw` int NOT NULL,
             `flags` varchar(255),
             `timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (`id`)
-            )
-            ";
-        try {
-            $db->exec($query);
-        } catch (Exception $e) {
-            if (!$db->isErrNo($e, '1050')) {
-                throw $e;
-            }
-        }
+            PRIMARY KEY (`id`)");
     }
 
-    private function getEnabledNotifications(): array
+    public function uninstall()
     {
-        $db = Db::get();
-        $query = "SELECT * FROM `" . Common::prefixTable('rebel_notifications') . "` WHERE `enabled` = ?";
-        $params = [1];
-
-        try {
-            $notifications = $db->fetchAll($query, $params);
-            return $notifications;
-        } catch (\Exception $e) {
-            throw new Exception("Error fetching enabled notifications: " . $e->getMessage());
-        }
-    }
-
-    private function getDb()
-    {
-        return Db::get();
-    }
-
-    public function logger()
-    {
-        return StaticContainer::get(LoggerInterface::class);
+        Db::dropTables(Common::prefixTable(self::TABLE));
     }
 }

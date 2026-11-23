@@ -1,14 +1,22 @@
 {
   "RebelNotifications": {
+    "Cancel": "Avbryt",
     "Context": "Kontext",
     "CreateNewNotification": "Skapa ny notifiering",
     "CreateNotification": "Skapa notifiering",
+    "Created": "Notifieringen %1$s skapades.",
     "Delete": "Ta bort",
     "DeleteNotification": "Ta bort notifiering",
+    "Deleted": "Notifiering %1$s togs bort.",
     "Disabled": "Inaktiverad",
     "Edit": "Redigera",
     "EditNotification": "Redigera notifiering",
     "Enabled": "Aktiverad",
+    "ErrorMessage": "En notifiering behöver ett meddelande som inte är för långt.",
+    "ErrorNotFound": "Notifieringen hittades inte.",
+    "ErrorNotPosted": "En ändring måste skickas från sidan.",
+    "ErrorOneOf": "Värdet för %1$s måste vara något av: %2$s.",
+    "ErrorTitle": "En notifiering behöver en titel på högst %1$s tecken.",
     "ExistingNotifications": "Befintliga notifieringar",
     "Manage": "Hantera",
     "ManageNotifications": "Hantera notifieringar",
@@ -18,7 +26,9 @@
     "Raw": "Rå",
     "RawHTML": "Rå (HTML)",
     "RebelNotifications": "Rebel Notifications",
+    "SaveChanges": "Spara ändringar",
     "Title": "Titel",
-    "Type": "Typ"
+    "Type": "Typ",
+    "Updated": "Notifiering %1$s uppdaterades."
   }
 }

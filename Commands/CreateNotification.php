@@ -94,16 +94,8 @@ class CreateNotification extends ConsoleCommand
     {
         $input = $this->getInput();
         $output = $this->getOutput();
-        if (!$input->hasOption('enabled') || $input->getOption('enabled') === null) {
-            $enabled = 0;
-        } else {
-            $enabled = 1;
-        }
-        if (!$input->hasOption('raw') || $input->getOption('raw') === null) {
-            $raw = 0;
-        } else {
-            $raw = 1;
-        }
+        $enabled = $input->getOption('enabled') ? 1 : 0;
+        $raw = $input->getOption('raw') ? 1 : 0;
         if (!$input->hasOption('type') || $input->getOption('type') === null) {
             throw new \InvalidArgumentException("The 'type' option is required.");
         }

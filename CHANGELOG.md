@@ -1,5 +1,26 @@
 # Changelog
 
+## Unreleased
+
+### Security
+
+- HTML in a message is cleaned wherever it is saved (page, API, console) and again when it is shown: only the allowed tags are kept, without attributes, and a link keeps only a web or mail address.
+- A message without raw HTML is shown as text on the manage page.
+- `rebelnotifications:create` only enables a notification and raw HTML when `--enabled` and `--raw` are given.
+- Changes on the manage page have to be posted.
+
+### Added
+
+- The API checks title, message, context, priority and type.
+- Changes are announced with events, which RebelAuditLog logs.
+- The table is removed when the plugin is uninstalled.
+- PHPStan check, Dependabot and a security policy.
+
+### Changed
+
+- The menu item is shown to super users only.
+- All texts of the pages are translated (English, Swedish, French).
+
 ## [5.0.8] - 2026-03-02
 
 ### Fixed
