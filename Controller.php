@@ -21,195 +21,136 @@
 
 namespace Piwik\Plugins\RebelNotifications;
 
-use Piwik\Common;
-use Piwik\View;
-use Piwik\Db;
-use Piwik\Plugins\RebelNotifications\API;
-use Piwik\Notification;
-use Piwik\Container\StaticContainer;
-use Piwik\Log\LoggerInterface;
-use Piwik\Request;
+use Exception;
+use Piwik\Nonce;
 use Piwik\Piwik;
 use Piwik\Plugin\ControllerAdmin;
-use Piwik\Nonce;
+use Piwik\Request;
+use Piwik\View;
 
 class Controller extends ControllerAdmin
 {
+    public const NONCE = 'RebelNotifications.manage';
+
     /**
-     * Display the list of existing notifications and a form to create new ones.
+     * The notifications, and a form to create one.
+     *
+     * @param string[] $notificationList what to tell the user
      */
-    public function index($siteID = 0, $notificationList = null)
+    public function index(array $notificationList = [])
     {
         Piwik::checkUserHasSuperUserAccess();
-        if ($siteID == 0) {
-            $request = Request::fromRequest();
-            $siteID = $request->getIntegerParameter('idSite', 0);
+
+        $notifications = API::getInstance()->getAllNotifications();
+        foreach ($notifications as &$notification) {
+            // What was stored before the message was cleaned on saving.
+            $notification['message'] = $notification['raw'] ? Message::clean((string) $notification['message']) : $notification['message'];
         }
-        $db = Db::get();
-        $query = "SELECT * FROM `" . Common::prefixTable('rebel_notifications') . "`";
-        $notifications = $db->fetchAll($query);
 
-        $view = new View('@RebelNotifications/manageNotifications');
-        $this->setBasicVariablesView($view);
-        $view->assign('messages', $notifications);
-        $view->assign('success', true);
-        $view->assign('error', false);
-        $view->assign('contexts', $this->contexts());
-        $view->assign('types', $this->types());
-        $view->assign('priorities', $this->priorities());
-        $view->assign('notificationList', $notificationList);
-        $view->assign('createNonce', Nonce::getNonce('RebelNotifications.create'));
-        $view->assign('deleteNonce', Nonce::getNonce('RebelNotifications.delete'));
-
-        return $view->render();
+        return $this->render('manageNotifications', [
+            'messages' => $notifications,
+            'notificationList' => $notificationList,
+        ]);
     }
 
-    /**
-     * Handle form submission for creating a new notification.
-     */
     public function createNotification()
     {
-        Piwik::checkUserHasSuperUserAccess();
-        Nonce::checkNonce('RebelNotifications.create');
-
-        $enabled = trim(Request::fromRequest()->getIntegerParameter('enabled', 0));
-        $title = trim(Request::fromRequest()->getStringParameter('title', 'string'));
-        $message = trim(Request::fromRequest()->getStringParameter('message', 'string'));
-        $context = trim(Request::fromRequest()->getStringParameter('context', 'string'));
-        $priority = trim(Request::fromRequest()->getStringParameter('priority', 'string'));
-        $type = trim(Request::fromRequest()->getStringParameter('type', 'string'));
-        $raw = trim(Request::fromRequest()->getIntegerParameter('raw', 0));
-
-        $trimMessage = strip_tags($message, '<b><a><strong><i><h1><h2><h3><h4><h5><h6><em>');
+        $this->checkPost();
+        $values = $this->getPostedValues();
 
         try {
-            API::getInstance()->insertNotification(
-                $enabled,
-                $title,
-                $trimMessage,
-                $context,
-                $priority,
-                $type,
-                $raw
-            );
-            $this->logger()->debug(
-                'Created notification: {message}',
-                ['message' => 'success']
-            );
-            $notificationList[] = "Notification {$title} was created";
-            return $this->index(0, $notificationList);
-        } catch (\Exception $e) {
-            $this->logger()->error(
-                'Error creating notification: {message}',
-                ['message' => $e->getMessage()]
-            );
-            $notificationList[] = $e->getMessage();
-            return $this->index(0, $notificationList);
+            API::getInstance()->insertNotification(...array_values($values));
+        } catch (Exception $e) {
+            return $this->index([$e->getMessage()]);
         }
+
+        return $this->index([Piwik::translate('RebelNotifications_Created', [$values['title']])]);
     }
 
-    public function logger()
+    public function deleteNotification()
     {
-        return StaticContainer::get(LoggerInterface::class);
+        $this->checkPost();
+        $id = Request::fromPost()->getIntegerParameter('id', 0);
+
+        API::getInstance()->deleteNotification($id);
+
+        return $this->index([Piwik::translate('RebelNotifications_Deleted', [$id])]);
     }
 
-    private function contexts()
-    {
-        return [
-            Notification::CONTEXT_INFO,
-            Notification::CONTEXT_ERROR,
-            Notification::CONTEXT_SUCCESS,
-            Notification::CONTEXT_WARNING,
-        ];
-    }
-
-    private function priorities()
-    {
-        return [
-            Notification::PRIORITY_MIN,
-            Notification::PRIORITY_LOW,
-            Notification::PRIORITY_HIGH,
-            Notification::PRIORITY_MAX
-        ];
-    }
-
-    private function types()
-    {
-        return [
-            Notification::TYPE_PERSISTENT,
-            Notification::TYPE_TRANSIENT,
-            Notification::TYPE_TOAST
-        ];
-    }
-
-    public function deleteNotification($id = null)
+    public function editNotification()
     {
         Piwik::checkUserHasSuperUserAccess();
-        Nonce::checkNonce('RebelNotifications.delete');
-        try {
-            if (!isset($id)) {
-                $id = Request::fromRequest()->getIntegerParameter('id', 0);
+        $id = Request::fromRequest()->getIntegerParameter('id', 0);
+
+        foreach (API::getInstance()->getAllNotifications() as $notification) {
+            if ((int) $notification['id'] === $id) {
+                return $this->render('editNotification', ['notification' => $notification]);
             }
-            $API = API::getInstance();
-            $API->deleteNotification($id);
-
-            $notificationList[] = 'Notification ' . $id . ' deleted';
-            return $this->index(0, $notificationList);
-        } catch (\Exception $e) {
-            echo $e;
         }
+
+        throw new Exception(Piwik::translate('RebelNotifications_ErrorNotFound'));
     }
 
-    public function editNotification($id = null)
+    public function updateNotification()
     {
-        Piwik::checkUserHasSuperUserAccess();
-        if (!isset($id)) {
-            $id = trim(Request::fromRequest()->getStringParameter('id', 'string'));
+        $this->checkPost();
+        $id = Request::fromPost()->getIntegerParameter('id', 0);
+
+        try {
+            API::getInstance()->updateNotification($id, ...array_values($this->getPostedValues()));
+        } catch (Exception $e) {
+            return $this->index([$e->getMessage()]);
         }
 
-        $db = Db::get();
-        $notification = $db->fetchRow("SELECT * FROM `" . Common::prefixTable('rebel_notifications') . "` WHERE id = ?", [$id]);
-        if (empty($notification)) {
-            throw new \Exception('Notification not found');
-        }
-
-        $view = new View('@RebelNotifications/editNotification');
-        $this->setBasicVariablesView($view);
-        $view->assign('notification', $notification);
-        $view->assign('success', true);
-        $view->assign('error', false);
-        $view->assign('contexts', $this->contexts());
-        $view->assign('types', $this->types());
-        $view->assign('priorities', $this->priorities());
-        $view->assign('updateNonce', Nonce::getNonce('RebelNotifications.update'));
-
-        return $view->render();
+        return $this->index([Piwik::translate('RebelNotifications_Updated', [$id])]);
     }
 
     /**
-      * Handle the submission of the edit form.
-      */
-    public function updateNotification()
+     * A change is posted by a super user with the nonce of the page it comes from.
+     */
+    private function checkPost(): void
     {
         Piwik::checkUserHasSuperUserAccess();
-        Nonce::checkNonce('RebelNotifications.update');
-        $notificationId = trim(Request::fromRequest()->getIntegerParameter('id', 0));
-        $enabled = trim(Request::fromRequest()->getIntegerParameter('enabled', 0));
-        $title = trim(Request::fromRequest()->getStringParameter('title', 'string'));
-        $message = trim(Request::fromRequest()->getStringParameter('message', 'string'));
-        $context = trim(Request::fromRequest()->getStringParameter('context', 'string'));
-        $priority = trim(Request::fromRequest()->getStringParameter('priority', 'string'));
-        $type = trim(Request::fromRequest()->getStringParameter('type', 'string'));
-        $raw = trim(Request::fromRequest()->getIntegerParameter('raw', 0));
 
-        try {
-            $api = API::getInstance();
-            $api->updateNotification($notificationId, $enabled, $title, $message, $context, $priority, $type, $raw);
-            $notificationList[] = 'Notification ' . $notificationId . ' updated';
-            return $this->index(0, $notificationList);
-        } catch (\Exception $e) {
-            $notificationList[] = 'Notification ' . $notificationId . ' not updated. Error: ' . $e->getMessage();
-            return $this->index(0, $notificationList);
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            throw new Exception(Piwik::translate('RebelNotifications_ErrorNotPosted'));
         }
+        Nonce::checkNonce(self::NONCE, Request::fromPost()->getStringParameter('nonce', ''));
+    }
+
+    /**
+     * @return array{enabled: int, title: string, message: string, context: string, priority: string, type: string, raw: int}
+     */
+    private function getPostedValues(): array
+    {
+        $post = Request::fromPost();
+
+        return [
+            'enabled' => $post->getIntegerParameter('enabled', 0),
+            'title' => $post->getStringParameter('title', ''),
+            'message' => $post->getStringParameter('message', ''),
+            'context' => $post->getStringParameter('context', ''),
+            'priority' => $post->getStringParameter('priority', ''),
+            'type' => $post->getStringParameter('type', ''),
+            'raw' => $post->getIntegerParameter('raw', 0),
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $variables
+     */
+    private function render(string $template, array $variables): string
+    {
+        $view = new View('@RebelNotifications/' . $template);
+        $this->setBasicVariablesView($view);
+        foreach ($variables as $name => $value) {
+            $view->assign($name, $value);
+        }
+        $view->assign('contexts', API::CONTEXTS);
+        $view->assign('types', API::TYPES);
+        $view->assign('priorities', API::PRIORITIES);
+        $view->assign('nonce', Nonce::getNonce(self::NONCE));
+
+        return $view->render();
     }
 }

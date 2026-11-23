@@ -21,10 +21,11 @@
 
 namespace Piwik\Plugins\RebelNotifications;
 
-use Piwik\Common;
-use Piwik\Piwik;
-use Piwik\Db;
 use Exception;
+use Piwik\Common;
+use Piwik\Db;
+use Piwik\Notification;
+use Piwik\Piwik;
 
 /**
  * API for plugin RebelNotifications. With this you can handle notifications to
@@ -34,6 +35,32 @@ use Exception;
  */
 class API extends \Piwik\Plugin\API
 {
+    public const CONTEXTS = [
+        Notification::CONTEXT_INFO,
+        Notification::CONTEXT_ERROR,
+        Notification::CONTEXT_SUCCESS,
+        Notification::CONTEXT_WARNING,
+    ];
+
+    public const PRIORITIES = [
+        Notification::PRIORITY_MIN,
+        Notification::PRIORITY_LOW,
+        Notification::PRIORITY_HIGH,
+        Notification::PRIORITY_MAX,
+    ];
+
+    public const TYPES = [
+        Notification::TYPE_PERSISTENT,
+        Notification::TYPE_TRANSIENT,
+        Notification::TYPE_TOAST,
+    ];
+
+    private const MAX_TITLE_LENGTH = 255;
+    private const MAX_MESSAGE_BYTES = 60000;
+
+    /**
+     * @unsanitized
+     */
     public function insertNotification(
         int $enabled,
         string $title,
@@ -44,38 +71,42 @@ class API extends \Piwik\Plugin\API
         int $raw
     ): void {
         Piwik::checkUserHasSuperUserAccess();
-        $query = "INSERT INTO `" . Common::prefixTable('rebel_notifications') . "`
-            (enabled, title, message, context, priority, type, raw) VALUES (?,?,?,?,?,?,?)";
-        $params = [$enabled, $title, $message, $context, $priority, $type, $raw];
+        $values = $this->check($enabled, $title, $message, $context, $priority, $type, $raw);
 
-        $db = $this->getDb();
+        Db::query(
+            'INSERT INTO `' . Common::prefixTable('rebel_notifications') . '`
+            (enabled, title, message, context, priority, type, raw) VALUES (?,?,?,?,?,?,?)',
+            $values
+        );
 
-        try {
-            $db->query($query, $params);
-        } catch (Exception $e) {
-            if (!$db->isErrNo($e, '1050')) {
-                throw $e;
-            }
-        }
+        /**
+         * Posted when a notification is added.
+         *
+         * @param int $id
+         * @param string $title
+         */
+        Piwik::postEvent('RebelNotifications.notification.added', [(int) Db::get()->lastInsertId(), $values[1]]);
     }
 
     public function deleteNotification(int $id)
     {
         Piwik::checkUserHasSuperUserAccess();
-        try {
-            $db = $this->getDb();
-            $query = $db->query(
-                "DELETE FROM `" .
-                Common::prefixTable('rebel_notifications') .
-                "` WHERE `id` = ?",
-                [$id]
-            );
-            return true;
-        } catch (\Exception $e) {
-            throw $e;
-        }
+
+        Db::query('DELETE FROM `' . Common::prefixTable('rebel_notifications') . '` WHERE `id` = ?', [$id]);
+
+        /**
+         * Posted when a notification is deleted.
+         *
+         * @param int $id
+         */
+        Piwik::postEvent('RebelNotifications.notification.deleted', [$id]);
+
+        return true;
     }
 
+    /**
+     * @unsanitized
+     */
     public function updateNotification(
         int $id,
         int $enabled,
@@ -87,70 +118,69 @@ class API extends \Piwik\Plugin\API
         int $raw
     ): void {
         Piwik::checkUserHasSuperUserAccess();
+        $values = $this->check($enabled, $title, $message, $context, $priority, $type, $raw);
 
-        $query = "UPDATE `" . Common::prefixTable('rebel_notifications') . "`
-                  SET enabled = ?, title = ?, message = ?, context = ?, priority = ?, type = ?, raw = ?
-                  WHERE id = ?";
-        $params = [$enabled, $title, $message, $context, $priority, $type, $raw, $id];
+        Db::query(
+            'UPDATE `' . Common::prefixTable('rebel_notifications') . '`
+                SET enabled = ?, title = ?, message = ?, context = ?, priority = ?, type = ?, raw = ?
+              WHERE id = ?',
+            array_merge($values, [$id])
+        );
 
-        $db = $this->getDb();
-
-        try {
-            $db->query($query, $params);
-        } catch (\Exception $e) {
-            throw $e;
-        }
+        /**
+         * Posted when a notification is changed.
+         *
+         * @param int $id
+         * @param string $title
+         */
+        Piwik::postEvent('RebelNotifications.notification.updated', [$id, $values[1]]);
     }
 
     public function getEnabledNotifications(): array
     {
-        Piwik::checkUserHasSuperUserAccess(); // Ensure only authorized users can access this method
+        Piwik::checkUserHasSuperUserAccess();
 
-        $db = Db::get();
-        $query = "SELECT * FROM `" . Common::prefixTable('rebel_notifications') . "` WHERE `enabled` = ?";
-        $params = [1];  // Only get notifications where `enabled` is set to 1
-
-        try {
-            $notifications = $db->fetchAll($query, $params);
-            return $notifications;
-        } catch (\Exception $e) {
-            throw new Exception("Error fetching enabled notifications: " . $e->getMessage());
-        }
+        return Db::fetchAll('SELECT * FROM `' . Common::prefixTable('rebel_notifications') . '` WHERE `enabled` = 1');
     }
 
     public function getDisabledNotifications(): array
     {
-        Piwik::checkUserHasSuperUserAccess(); // Ensure only authorized users can access this method
+        Piwik::checkUserHasSuperUserAccess();
 
-        $db = Db::get();
-        $query = "SELECT * FROM `" . Common::prefixTable('rebel_notifications') . "` WHERE `enabled` = ?";
-        $params = [0];  // Only get notifications where `enabled` is set to 1
-
-        try {
-            $notifications = $db->fetchAll($query, $params);
-            return $notifications;
-        } catch (\Exception $e) {
-            throw new Exception("Error fetching disabled notifications: " . $e->getMessage());
-        }
+        return Db::fetchAll('SELECT * FROM `' . Common::prefixTable('rebel_notifications') . '` WHERE `enabled` = 0');
     }
 
     public function getAllNotifications(): array
     {
-        Piwik::checkUserHasSuperUserAccess(); // Ensure only authorized users can access this method
+        Piwik::checkUserHasSuperUserAccess();
 
-        $db = Db::get();
-        $query = "SELECT * FROM `" . Common::prefixTable('rebel_notifications') . "`";
-
-        try {
-            $notifications = $db->fetchAll($query);
-            return $notifications;
-        } catch (\Exception $e) {
-            throw new Exception("Error fetching notifications: " . $e->getMessage());
-        }
+        return Db::fetchAll('SELECT * FROM `' . Common::prefixTable('rebel_notifications') . '`');
     }
 
-    private function getDb()
+    /**
+     * @return array<int, int|string> the values to store, in the order of the parameters
+     */
+    private function check(int $enabled, string $title, string $message, string $context, string $priority, string $type, int $raw): array
     {
-        return Db::get();
+        $title = trim($title);
+        $message = trim($message);
+        if ($title === '' || mb_strlen($title, 'UTF-8') > self::MAX_TITLE_LENGTH) {
+            throw new Exception(Piwik::translate('RebelNotifications_ErrorTitle', [self::MAX_TITLE_LENGTH]));
+        }
+        if ($message === '' || strlen($message) > self::MAX_MESSAGE_BYTES) {
+            throw new Exception(Piwik::translate('RebelNotifications_ErrorMessage'));
+        }
+        if (!in_array($context, self::CONTEXTS, true)) {
+            throw new Exception(Piwik::translate('RebelNotifications_ErrorOneOf', ['context', implode(', ', self::CONTEXTS)]));
+        }
+        if (!ctype_digit($priority) || (int) $priority < Notification::PRIORITY_MIN || (int) $priority > Notification::PRIORITY_MAX) {
+            throw new Exception(Piwik::translate('RebelNotifications_ErrorOneOf', ['priority', Notification::PRIORITY_MIN . ' - ' . Notification::PRIORITY_MAX]));
+        }
+        if (!in_array($type, self::TYPES, true)) {
+            throw new Exception(Piwik::translate('RebelNotifications_ErrorOneOf', ['type', implode(', ', self::TYPES)]));
+        }
+        $raw = $raw ? 1 : 0;
+
+        return [$enabled ? 1 : 0, $title, $raw ? Message::clean($message) : $message, $context, $priority, $type, $raw];
     }
 }

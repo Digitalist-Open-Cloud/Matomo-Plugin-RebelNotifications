@@ -33,8 +33,8 @@ class Menu extends \Piwik\Plugin\Menu
 {
     public function configureAdminMenu(MenuAdmin $menu)
     {
-        if (Piwik::isUserHasSomeAdminAccess()) {
-            $menu->registerMenuIcon('RebelNotifications_RebelNotifications', 'icon-document');
+        if (Piwik::hasUserSuperUserAccess()) {
+            $menu->registerMenuIcon('RebelNotifications_RebelNotifications', 'rebelNotificationsIcon');
             $menu->addItem(
                 'RebelNotifications_RebelNotifications',
                 null,

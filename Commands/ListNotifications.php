@@ -39,7 +39,7 @@ class ListNotifications extends ConsoleCommand
      */
     protected function configure()
     {
-        $HelpText = 'The <info>%command.name%</info> will create a notification.
+        $HelpText = 'The <info>%command.name%</info> lists the notifications.
         <comment>Samples:</comment>
         To run:
         <info>%command.name%</info>';
@@ -49,7 +49,7 @@ class ListNotifications extends ConsoleCommand
                 $this->addNoValueOption(
                     'enabled',
                     null,
-                    'Set to enabled',
+                    'Only list enabled notifications',
                     null
                 );
     }
