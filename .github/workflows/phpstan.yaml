@@ -6,6 +6,9 @@ on:
   push:
     branches: ["5.x-dev"]
 
+permissions:
+  contents: read
+
 env:
   PLUGIN_NAME: RebelNotifications
 
